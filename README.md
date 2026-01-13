@@ -23,7 +23,7 @@ If multiple `.db` files are present in the directory, you will be prompted to se
 - Lightweight
 - Cross-platform
 ## Demo
-![img.png](img.png)
+![img_2.png](img_2.png)
 ![img_1.png](img_1.png)
 ## Usage
 The application runs in an interactive loop. Available commands:
