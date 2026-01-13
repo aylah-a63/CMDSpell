@@ -28,7 +28,7 @@ class InitiativeTracker:
         self.cursor = self.conn.cursor()
         self._init_db()
         self.current_index = 0
-        self.round = 1
+        self.round = 0
         self.combatants = []
         self.load_state()
 
@@ -68,7 +68,7 @@ class InitiativeTracker:
                 value INTEGER
             )
         ''')
-        self.cursor.execute('INSERT OR IGNORE INTO state (key, value) VALUES ("round", 1)')
+        self.cursor.execute('INSERT OR IGNORE INTO state (key, value) VALUES ("round", 0)')
         self.cursor.execute('INSERT OR IGNORE INTO state (key, value) VALUES ("current_index", 0)')
         self.conn.commit()
 
@@ -99,6 +99,10 @@ class InitiativeTracker:
         self.conn.commit()
 
     def add_combatant(self, name, initiative, hp, ac, is_player):
+        if not self.combatants:
+            self.round = 1
+            self.current_index = 0
+            self.save_state()
         self.cursor.execute('''
             INSERT INTO combatants (name, initiative, max_hp, current_hp, ac, is_player)
             VALUES (?, ?, ?, ?, ?, ?)
@@ -111,6 +115,10 @@ class InitiativeTracker:
         self.cursor.execute('DELETE FROM combatants WHERE LOWER(name)=LOWER(?)', (name,))
         self.conn.commit()
         self.load_state()
+        if not self.combatants:
+            self.round = 0
+            self.current_index = 0
+            self.save_state()
 
     def sort_combatants(self, save=True):
         self.combatants.sort(key=lambda x: (x.initiative, x.name), reverse=True)
