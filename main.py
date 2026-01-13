@@ -82,7 +82,12 @@ class InitiativeTracker:
         self.cursor.execute('SELECT value FROM state WHERE key="round"')
         self.round = self.cursor.fetchone()[0]
         self.cursor.execute('SELECT value FROM state WHERE key="current_index"')
-        self.current_index = self.cursor.fetchone()[0]
+        saved_index = self.cursor.fetchone()[0]
+        
+        # Keep track of who was current BEFORE we load and sort
+        current_id = None
+        if self.combatants and self.current_index < len(self.combatants):
+            current_id = self.combatants[self.current_index].id
         
         self.combatants = []
         self.cursor.execute('SELECT id, name, initiative, max_hp, current_hp, ac, is_player FROM combatants')
@@ -97,9 +102,20 @@ class InitiativeTracker:
             
             c = Combatant(c_id, row[1], row[2], row[3], row[4], row[5], bool(row[6]), conditions, history)
             self.combatants.append(c)
+
         self.sort_combatants(save=False)
         
-        # Ensure current_index is valid after potentially changing combatants list
+        # If we had a current combatant, ensure we stay on them
+        if current_id is not None:
+            for i, c in enumerate(self.combatants):
+                if c.id == current_id:
+                    self.current_index = i
+                    break
+        else:
+            # Otherwise use the saved index from DB
+            self.current_index = saved_index
+
+        # Ensure current_index is valid
         if self.combatants and self.current_index >= len(self.combatants):
             self.current_index = 0
 
@@ -113,6 +129,10 @@ class InitiativeTracker:
             self.round = 1
             self.current_index = 0
             self.save_state()
+        else:
+            # Before adding, ensure current_index is saved so load_state picks it up
+            self.save_state()
+            
         self.cursor.execute('''
             INSERT INTO combatants (name, initiative, max_hp, current_hp, ac, is_player)
             VALUES (?, ?, ?, ?, ?, ?)
@@ -164,14 +184,17 @@ class InitiativeTracker:
                 else:
                     self.cursor.execute('UPDATE conditions SET duration=? WHERE id=?', (new_duration, c_id))
         
+        # Reload state to ensure we have latest data (e.g. if conditions were deleted)
+        # This will also ensure our current_index is valid for the current person
+        self.load_state()
+        
         self.current_index += 1
         if self.current_index >= len(self.combatants):
             self.current_index = 0
             self.round += 1
         self.conn.commit()
-        # Save state before loading to ensure current_index/round are preserved
+        # Save state to persist the move to next turn
         self.save_state()
-        self.load_state()
 
     def take_damage(self, name, amount, damage_type):
         for c in self.combatants:
