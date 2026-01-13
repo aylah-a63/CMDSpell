@@ -21,5 +21,4 @@ env/
 Thumbs.db
 
 *.xml
-*.db
 *.iml
