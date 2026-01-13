@@ -43,3 +43,4 @@ Pull requests will not be accepted. This is a personal project that was created 
 - [D&D 5e SRD](https://dnd5e.wikidot.com/)
 - Michael the DM for inspiration
 - [Stack Overflow](https://stackoverflow.com/) for code snippets and inspiration
+- Oregon Tech D&D Club for even getting me into D&D
