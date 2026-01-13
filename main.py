@@ -49,9 +49,15 @@ class InitiativeTracker:
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 combatant_id INTEGER,
                 condition TEXT NOT NULL,
+                duration INTEGER,
                 FOREIGN KEY (combatant_id) REFERENCES combatants (id) ON DELETE CASCADE
             )
         ''')
+        # Check if duration column exists, if not add it (for migration)
+        self.cursor.execute("PRAGMA table_info(conditions)")
+        columns = [column[1] for column in self.cursor.fetchall()]
+        if "duration" not in columns:
+            self.cursor.execute('ALTER TABLE conditions ADD COLUMN duration INTEGER')
         self.cursor.execute('''
             CREATE TABLE IF NOT EXISTS history (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -83,8 +89,8 @@ class InitiativeTracker:
         rows = self.cursor.fetchall()
         for row in rows:
             c_id = row[0]
-            self.cursor.execute('SELECT condition FROM conditions WHERE combatant_id=?', (c_id,))
-            conditions = [r[0] for r in self.cursor.fetchall()]
+            self.cursor.execute('SELECT condition, duration FROM conditions WHERE combatant_id=?', (c_id,))
+            conditions = [{"name": r[0], "duration": r[1]} for r in self.cursor.fetchall()]
             
             self.cursor.execute('SELECT type, amount, damage_type FROM history WHERE combatant_id=?', (c_id,))
             history = [{"type": r[0], "amount": r[1], "damage_type": r[2]} for r in self.cursor.fetchall()]
@@ -92,6 +98,10 @@ class InitiativeTracker:
             c = Combatant(c_id, row[1], row[2], row[3], row[4], row[5], bool(row[6]), conditions, history)
             self.combatants.append(c)
         self.sort_combatants(save=False)
+        
+        # Ensure current_index is valid after potentially changing combatants list
+        if self.combatants and self.current_index >= len(self.combatants):
+            self.current_index = 0
 
     def save_state(self):
         self.cursor.execute('UPDATE state SET value=? WHERE key="round"', (self.round,))
@@ -121,18 +131,47 @@ class InitiativeTracker:
             self.save_state()
 
     def sort_combatants(self, save=True):
+        # Keep track of who is current before sorting
+        current_id = None
+        if self.combatants and self.current_index < len(self.combatants):
+            current_id = self.combatants[self.current_index].id
+            
         self.combatants.sort(key=lambda x: (x.initiative, x.name), reverse=True)
+        
+        # Restore current_index to the same person
+        if current_id is not None:
+            for i, c in enumerate(self.combatants):
+                if c.id == current_id:
+                    self.current_index = i
+                    break
+                    
         if save:
             self.save_state()
 
     def next_turn(self):
         if not self.combatants:
             return
+        
+        # Before moving to next turn, decrement conditions for the current combatant
+        current_combatant = self.combatants[self.current_index]
+        self.cursor.execute('SELECT id, condition, duration FROM conditions WHERE combatant_id=?', (current_combatant.id,))
+        conds = self.cursor.fetchall()
+        for c_id, c_name, c_duration in conds:
+            if c_duration is not None:
+                new_duration = c_duration - 1
+                if new_duration <= 0:
+                    self.cursor.execute('DELETE FROM conditions WHERE id=?', (c_id,))
+                else:
+                    self.cursor.execute('UPDATE conditions SET duration=? WHERE id=?', (new_duration, c_id))
+        
         self.current_index += 1
         if self.current_index >= len(self.combatants):
             self.current_index = 0
             self.round += 1
+        self.conn.commit()
+        # Save state before loading to ensure current_index/round are preserved
         self.save_state()
+        self.load_state()
 
     def take_damage(self, name, amount, damage_type):
         for c in self.combatants:
@@ -164,10 +203,10 @@ class InitiativeTracker:
                 return True
         return False
 
-    def add_condition(self, name, condition):
+    def add_condition(self, name, condition, duration=None):
         for c in self.combatants:
             if c.name.lower() == name.lower():
-                self.cursor.execute('INSERT INTO conditions (combatant_id, condition) VALUES (?, ?)', (c.id, condition))
+                self.cursor.execute('INSERT INTO conditions (combatant_id, condition, duration) VALUES (?, ?, ?)', (c.id, condition, duration))
                 self.conn.commit()
                 self.load_state()
                 return True
@@ -191,7 +230,14 @@ class InitiativeTracker:
             hp_str = f"{c.current_hp}/{c.max_hp}" if c.max_hp is not None else "N/A"
             ac_str = str(c.ac) if c.ac is not None else "N/A"
             c_type = "Player" if c.is_player else "Monster"
-            conds = ", ".join(c.conditions) if c.conditions else ""
+            
+            cond_list = []
+            for cond in c.conditions:
+                if cond['duration'] is not None:
+                    cond_list.append(f"{cond['name']}({cond['duration']}r)")
+                else:
+                    cond_list.append(cond['name'])
+            conds = ", ".join(cond_list)
             
             hp_visual = ""
             if c.max_hp is not None and c.max_hp > 0:
@@ -286,7 +332,10 @@ def main():
                 name = input("Target Name: ")
                 cond = input("Condition: ")
                 if sub == "add":
-                    tracker.add_condition(name, cond)
+                    print("Duration cheat sheet: 1 round = 6 seconds. 10 rounds = 1 minute.")
+                    duration_input = input("Duration in rounds (optional, press Enter to skip): ")
+                    duration = int(duration_input) if duration_input.strip() else None
+                    tracker.add_condition(name, cond, duration)
                 elif sub == "rem":
                     tracker.remove_condition(name, cond)
             

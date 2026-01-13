@@ -1,5 +1,5 @@
 # CMDSpell
-CMDSpell (pronounced Command Spell) is a CLI-based Dungeons & Dragons initiative tracker powered by SQLite. It helps keep track of initiative order, player/monster status, HP, AC, conditions, and damage history (including damage types).
+CMDSpell (pronounced Command Spell) is a CLI-based Dungeons & Dragons initiative tracker powered by SQLite. It helps keep track of initiative order, player/monster status, HP, AC, conditions, condition duration, and damage history (including damage types).
 
 ## Dependencies
 - Python 3.6+
@@ -14,7 +14,7 @@ If multiple `.db` files are present in the directory, you will be prompted to se
 ## Features
 - Track initiative order
 - Track HP and armour class of monsters
-- Track conditions (e.g., Prone, Stunned)
+- Track conditions (e.g., Prone, Stunned) and supports auto-expiration of conditions
 - Track damage history (including damage types)
 - Track rounds of combat
 - Saves encounter data to `.db` file
@@ -33,7 +33,7 @@ The application runs in an interactive loop. Available commands:
 - `dam`: Apply damage to a combatant and record the damage type.
 - `heal`: Restore HP to a combatant.
 - `rem`: Remove a combatant from the tracker.
-- `cond`: Manage conditions (e.g., `add` or `rem` conditions like Prone, Stunned).
+- `cond`: Manage conditions (e.g., `add` or `rem` conditions like Prone, Stunned). When adding, you can specify an optional duration in rounds for auto-expiration.
 - `history`: View the damage and healing history of a specific combatant.
 - `quit`: Exit the application.
 
