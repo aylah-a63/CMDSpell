@@ -24,6 +24,7 @@ If multiple `.db` files are present in the directory, you will be prompted to se
 - Cross-platform
 ## Demo
 ![img.png](img.png)
+![img_1.png](img_1.png)
 ## Usage
 The application runs in an interactive loop. Available commands:
 
@@ -36,6 +37,8 @@ The application runs in an interactive loop. Available commands:
 - `history`: View the damage and healing history of a specific combatant.
 - `quit`: Exit the application.
 
+## Roadmap
+- Integration into FOSSVTT and other GMOSS software (if I get around to programming it)
 ## Contributing
 Pull requests will not be accepted. This is a personal project that was created as a one-time haha funny joke in response to "autistic ways to track initiative" and despite being a project I am proud of, I do not intend to have others developing it.
 

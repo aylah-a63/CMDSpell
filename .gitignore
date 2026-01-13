@@ -19,3 +19,7 @@ env/
 # OS
 .DS_Store
 Thumbs.db
+
+*.xml
+*.db
+*.iml
