@@ -11,8 +11,9 @@ python3 main.py
 ```
 `openArcana.py` serves as the backend library for the application and *must* be in the same directory. If multiple `.db` files are present in the directory, you will be prompted to select one. Otherwise, it defaults to `combat.db`.
 
+Despite being a standalone library, `openArcana.py` comes with the repository for convenience.
+
 ## Features
-- **Backend Library**: `openArcana.py` can be used as a standalone library for other projects.
 - Track initiative order
 - Track HP and armour class of monsters
 - Track conditions (e.g., Prone, Stunned) and supports auto-expiration of conditions
