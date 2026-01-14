@@ -5,13 +5,14 @@ CMDSpell (pronounced Command Spell) is a CLI-based Dungeons & Dragons initiative
 - Python 3.6+
 - SQLite
 ## Installation
-Simply download `main.py` and run it:
+Simply download `main.py` and `openArcana.py` and run `main.py`:
 ```bash
 python3 main.py
 ```
-If multiple `.db` files are present in the directory, you will be prompted to select one. Otherwise, it defaults to `combat.db`.
+`openArcana.py` serves as the backend library for the application and *must* be in the same directory. If multiple `.db` files are present in the directory, you will be prompted to select one. Otherwise, it defaults to `combat.db`.
 
 ## Features
+- **Backend Library**: `openArcana.py` can be used as a standalone library for other projects.
 - Track initiative order
 - Track HP and armour class of monsters
 - Track conditions (e.g., Prone, Stunned) and supports auto-expiration of conditions
@@ -33,6 +34,7 @@ The application runs in an interactive loop. Available commands:
 - `dam`: Apply damage to a combatant and record the damage type.
 - `heal`: Restore HP to a combatant.
 - `rem`: Remove a combatant from the tracker.
+- `clear`: Clears combatants from the tracker. This does NOT delete the `.db` file, that needs to be done manually.
 - `cond`: Manage conditions (e.g., `add` or `rem` conditions like Prone, Stunned). When adding, you can specify an optional duration in rounds for auto-expiration.
 - `history`: View the damage and healing history of a specific combatant.
 - `quit`: Exit the application.
